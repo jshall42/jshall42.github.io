@@ -1,50 +1,47 @@
-const CACHE_NAME = 'weather-widget-cache-v1';
-const urlsToCache = [
-  '/',
-  '/index.html',  // Adjust this if your HTML file is named differently
-  '/styles.css',   // Adjust this if you have external CSS files
-  '/script.js',    // Adjust this if you have separate JS files
-  '/Icon1.png',    // Include any images or assets needed
-  '/Icon2.png',
-  '/manifest.json'
+const CACHE_NAME = 'weather-app-v1';
+const ASSETS_TO_CACHE = [
+    '/',
+    '/index.html',
+    '/Icon1.png',
+    '/Icon2.png',
+    'https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css',
+    'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css',
+    'https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js',
+    'https://cdn.jsdelivr.net/npm/sweetalert2@11'
 ];
 
-// Install Service Worker
+// Install event - cache assets
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => {
-        console.log('Opened cache');
-        return cache.addAll(urlsToCache);
-      })
-  );
+    event.waitUntil(
+        caches.open(CACHE_NAME)
+            .then((cache) => {
+                return cache.addAll(ASSETS_TO_CACHE);
+            })
+    );
 });
 
-// Fetch from cache first, then network
-self.addEventListener('fetch', (event) => {
-  event.respondWith(
-    caches.match(event.request)
-      .then((cachedResponse) => {
-        if (cachedResponse) {
-          return cachedResponse;
-        }
-        return fetch(event.request);
-      })
-  );
-});
-
-// Activate Service Worker (Cleanup old caches if necessary)
+// Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  const cacheWhitelist = [CACHE_NAME];
-  event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (!cacheWhitelist.includes(cacheName)) {
-            return caches.delete(cacheName);
-          }
+    event.waitUntil(
+        caches.keys().then((cacheNames) => {
+            return Promise.all(
+                cacheNames.map((cacheName) => {
+                    if (cacheName !== CACHE_NAME) {
+                        return caches.delete(cacheName);
+                    }
+                })
+            );
         })
-      );
-    })
-  );
+    );
+});
+
+// Fetch event - serve from cache, fall back to network
+self.addEventListener('fetch', (event) => {
+    event.respondWith(
+        caches.match(event.request)
+            .then((response) => {
+                // Return cached version or fetch from network
+                return response || fetch(event.request);
+            })
+    );
 });
